@@ -3,7 +3,7 @@
   "displayName": "xlsx2md — XLSX to Markdown",
   "description": "Convert Excel (.xlsx) files to Markdown tables with embedded images. Integrates with GitHub Copilot Chat via @xlsx2md.",
   "version": "0.1.0",
-  "publisher": "xlsx2md",
+  "publisher": "XlsxToMarkDown",
   "license": "MIT",
   "icon": "icon.png",
   "galleryBanner": {
