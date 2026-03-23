@@ -2,3 +2,5 @@
 .gitignore
 *.vsix
 PUBLISHING.md
+# Exclude Chinese README - marketplace displays README.md (English) only
+README.zh-CN.md

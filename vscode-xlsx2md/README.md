@@ -3,112 +3,102 @@
 > Convert Excel (`.xlsx`) spreadsheets to Markdown with embedded image support.  
 > Integrates with **GitHub Copilot Chat** so Copilot can generate Markdown docs directly from XLSX files.
 
----
-
-## 目录 / Table of Contents
-
-- [安装 / Installation](#安装--installation)
-- [使用 / Usage](#使用--usage)
-- [插件设置 / Extension Settings](#插件设置--extension-settings)
-- [功能说明 / Features](#功能说明--features)
-- [常见问题 / FAQ](#常见问题--faq)
+**Language / 语言:** [English](README.md) | [中文](README.zh-CN.md)
 
 ---
 
-## 安装 / Installation
+## Table of Contents
 
-### 方式 A — VS Code 插件市场（推荐）/ Method A — VS Code Marketplace (recommended)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Extension Settings](#extension-settings)
+- [Features](#features)
+- [FAQ](#faq)
 
-> 最简单的一键安装方式。  
+---
+
+## Installation
+
+### Method A — VS Code Marketplace (recommended)
+
 > The easiest one-click install method.
 
-1. 打开 VS Code，按 `Ctrl+Shift+X` 打开插件面板。  
-   Open VS Code, press `Ctrl+Shift+X` to open the Extensions panel.
+1. Open VS Code, press `Ctrl+Shift+X` to open the Extensions panel.
 
-2. 搜索 **`xlsx2md`** 或 **`easetools.xlsx2md`**，点击 **Install**。  
-   Search for **`xlsx2md`** or **`easetools.xlsx2md`**, then click **Install**.
+2. Search for **`xlsx2md`** or **`easetools.xlsx2md`**, then click **Install**.
 
-3. 安装完成后，插件会自动检测 Python 依赖是否就绪。  
-   After install, the extension automatically checks whether Python dependencies are present.  
-   - 若缺少依赖，会弹出通知 → 点击 **"Install now"** 即可一键安装 `openpyxl` 和 `Pillow`。  
-     If packages are missing, a notification appears → click **"Install now"** to install `openpyxl` and `Pillow` automatically.
+3. After install, the extension automatically checks whether Python dependencies are present.
+   - If packages are missing, a notification appears → click **"Install now"** to install `openpyxl` and `Pillow` automatically.
 
-**前置条件 / Prerequisites:**
+**Prerequisites:**
 
-| 要求 | 版本 | 说明 |
-|------|------|------|
-| **VS Code** | 1.90+ | 必须 / Required |
-| **Python** | 3.7+ | 必须 / Required（插件会自动安装 pip 包 / extension auto-installs pip packages） |
+| Requirement | Version | Note |
+|-------------|---------|------|
+| **VS Code** | 1.90+ | Required |
+| **Python** | 3.7+ | Required (extension auto-installs pip packages) |
 
-> Python 本身需要预先安装。如果系统还没有 Python，请先访问 [python.org](https://www.python.org/downloads/) 下载安装。  
 > Python itself must be installed first. If not already installed, download it from [python.org](https://www.python.org/downloads/).
 
 ---
 
-### 方式 B — 下载 VSIX 离线安装 / Method B — Install from VSIX (offline)
+### Method B — Install from VSIX (offline)
 
-如果无法访问插件市场，可以从 [GitHub Releases](https://github.com/eternityman/EaseTools/releases) 下载 `.vsix` 文件：  
 If the marketplace is unavailable, download the `.vsix` from [GitHub Releases](https://github.com/eternityman/EaseTools/releases):
 
 ```bash
-# 命令行一键安装 / One command install
+# One command install
 code --install-extension easetools.xlsx2md-*.vsix
 ```
 
-或通过 UI / Or via UI:
+Or via UI:
 
-1. 打开命令面板 `Ctrl+Shift+P` → `Extensions: Install from VSIX…`  
-   Open Command Palette `Ctrl+Shift+P` → `Extensions: Install from VSIX…`
-2. 选择下载的 `.vsix` 文件 / Select the downloaded `.vsix` file.
+1. Open Command Palette `Ctrl+Shift+P` → `Extensions: Install from VSIX…`
+2. Select the downloaded `.vsix` file.
 
 ---
 
-### 方式 C — 从源码安装（开发者）/ Method C — Install from source (developers)
+### Method C — Install from source (developers)
 
 ```bash
 git clone https://github.com/eternityman/EaseTools.git
-code EaseTools/vscode-xlsx2md   # 打开扩展目录 / open extension folder
-# 按 F5 启动扩展开发主机 / Press F5 to launch Extension Development Host
+code EaseTools/vscode-xlsx2md   # open extension folder
+# Press F5 to launch Extension Development Host
 ```
 
 ---
 
-### Python 依赖手动安装 / Manual Python dependency install
+### Manual Python dependency install
 
-如果自动安装失败，或者需要手动重新安装，可以：  
 If auto-install fails, or you need to reinstall manually:
 
-**方法 1 — 命令面板** `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`
+**Method 1 — Command Palette** `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`
 
-**方法 2 — 终端**
+**Method 2 — Terminal**
 ```bash
 pip install openpyxl Pillow
-# Windows 上如果 pip 不在 PATH / Windows fallback:
+# Windows fallback if pip is not on PATH:
 python -m pip install openpyxl Pillow
 ```
 
 ---
 
-## 使用 / Usage
+## Usage
 
-### 方式 1 — 右键菜单 / Method 1 — Right-click context menu
+### Method 1 — Right-click context menu
 
-在资源管理器中右键点击任意 `.xlsx` 文件，选择：  
 Right-click any `.xlsx` file in the Explorer:
 
-| 菜单项 | 功能 |
-|--------|------|
-| **Convert XLSX to Markdown** | 转换并提取图片 / Convert with image extraction |
-| **Convert XLSX to Markdown (text only)** | 仅转换文本，不提取图片 / Text only, skip images |
+| Menu item | Function |
+|-----------|----------|
+| **Convert XLSX to Markdown** | Convert with image extraction |
+| **Convert XLSX to Markdown (text only)** | Text only, skip images |
 
-转换完成后，`.md` 文件会自动在编辑器中打开，图片保存在同目录的 `images/` 子文件夹。  
 The `.md` file opens automatically; images are saved to the `images/` sub-folder.
 
 ---
 
-### 方式 2 — 命令面板 / Method 2 — Command Palette
+### Method 2 — Command Palette
 
-按 `Ctrl+Shift+P`（macOS: `Cmd+Shift+P`），输入：  
 Press `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) and type:
 
 ```
@@ -116,88 +106,79 @@ xlsx2md: Convert XLSX to Markdown
 xlsx2md: Convert XLSX to Markdown (text only)
 ```
 
-如果当前编辑器没有打开 XLSX 文件，会弹出文件选择对话框。  
 If no XLSX is open in the editor, a file picker dialog will appear.
 
 ---
 
-### 方式 3 — Copilot Chat（`@xlsx2md`）/ Method 3 — Copilot Chat
+### Method 3 — Copilot Chat (`@xlsx2md`)
 
-> 需要 VS Code 1.90+ 并安装 GitHub Copilot Chat 扩展。  
 > Requires VS Code 1.90+ with GitHub Copilot Chat extension.
 
-打开 Copilot Chat 面板（`Ctrl+Alt+I`），然后输入：  
 Open Copilot Chat (`Ctrl+Alt+I`) and type:
 
-#### 基本用法 / Basic usage
+#### Basic usage
 
 ```
 @xlsx2md #yourfile.xlsx
 ```
 
-点击聊天输入框左侧的 **回形针图标**，选择 `.xlsx` 文件，或者直接输入文件名：  
 Click the **paperclip icon** in the chat input to attach a file, or type the filename:
 
 ```
 @xlsx2md convert report.xlsx to markdown
 ```
 
-#### 不提取图片 / Skip images
+#### Skip images
 
 ```
 @xlsx2md #budget.xlsx no images
 ```
 
-#### 只转换某个 Sheet / Convert a specific sheet
+#### Convert a specific sheet
 
-通过 MCP 服务器可指定 Sheet（见下文）。Chat 参与者模式会转换所有 Sheet。  
 Sheet filtering is available via the MCP server (see below). The `@xlsx2md` participant converts all sheets.
 
-#### 查看帮助 / Show help
+#### Show help
 
 ```
 @xlsx2md /help
 ```
 
-#### 可用命令 / Available commands
+#### Available commands
 
-| 命令 / Command | 说明 / Description |
-|---|---|
-| `@xlsx2md #file.xlsx` | 转换（含图片）/ Convert with images |
-| `@xlsx2md /convert #file.xlsx` | 显式转换命令 / Explicit convert |
-| `@xlsx2md /help` | 显示帮助 / Show help |
+| Command | Description |
+|---------|-------------|
+| `@xlsx2md #file.xlsx` | Convert with images |
+| `@xlsx2md /convert #file.xlsx` | Explicit convert |
+| `@xlsx2md /help` | Show help |
 
 ---
 
-### 方式 4 — MCP 服务器（让 Copilot 自动使用）/ Method 4 — MCP Server (automatic Copilot tool)
+### Method 4 — MCP Server (automatic Copilot tool)
 
-> 这是最深度的集成方式：Copilot 无需 `@xlsx2md` 前缀，在任何对话中都能自动读取 XLSX 文件。  
 > This is the deepest integration: Copilot can read XLSX files automatically in any chat, without typing `@xlsx2md`.
 
-详细步骤见 [`../mcp-xlsx2md/README.md`](../mcp-xlsx2md/README.md)。  
 See [`../mcp-xlsx2md/README.md`](../mcp-xlsx2md/README.md) for full setup instructions.
 
 ---
 
-## 插件设置 / Extension Settings
+## Extension Settings
 
-打开 VS Code 设置 (`Ctrl+,`) 并搜索 `xlsx2md` 来查看所有选项：  
 Open VS Code Settings (`Ctrl+,`) and search `xlsx2md` to see all options:
 
-| 设置键 / Setting | 默认值 / Default | 说明 / Description |
-|---|---|---|
-| `xlsx2md.pythonPath` | `python3` | Python 解释器路径 / Python interpreter path |
-| `xlsx2md.scriptPath` | *(内置 / bundled)* | 自定义 `xlsx2md.py` 路径；留空使用内置脚本 / Custom path to `xlsx2md.py`; leave empty for bundled |
-| `xlsx2md.imageDir` | `images` | 图片输出子目录名 / Sub-directory name for extracted images |
-| `xlsx2md.conversionTimeout` | `120` | 最大等待秒数（大文件可增加）/ Max wait seconds (increase for large files) |
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `xlsx2md.pythonPath` | `python3` | Python interpreter path |
+| `xlsx2md.scriptPath` | *(bundled)* | Custom path to `xlsx2md.py`; leave empty for bundled |
+| `xlsx2md.imageDir` | `images` | Sub-directory name for extracted images |
+| `xlsx2md.conversionTimeout` | `120` | Max wait seconds (increase for large files) |
 
 ---
 
-## 功能说明 / Features
+## Features
 
-### 输出示例 / Output example
+### Output example
 
-给定包含姓名、头像图片、备注的 XLSX 文件，输出结果如下：  
 Given an XLSX with name, avatar image, and notes columns, the output looks like:
 
 ```markdown
@@ -209,7 +190,7 @@ Given an XLSX with name, avatar image, and notes columns, the output looks like:
 | 李四 | ![image](images/Sheet1_img_1.png) | 工程师 |
 ```
 
-图片文件保存在：/ Image files saved at:
+Image files saved at:
 
 ```
 output/
@@ -219,36 +200,31 @@ output/
     └── Sheet1_img_1.png
 ```
 
-### 边界情况处理 / Edge case handling
+### Edge case handling
 
-| 情况 / Situation | 处理方式 / Handling |
-|---|---|
-| 单元格含竖线 `\|` | 自动转义为 `\\\|` / Auto-escaped to `\\\|` |
-| 单元格内换行 | 替换为 `<br>` / Replaced with `<br>` |
-| 合并单元格 | 非主单元格输出空字符串 / Non-master cells output empty string |
-| 空 Sheet | 输出提示文字 / Outputs placeholder text |
-| 无图片的 XLSX | 正常转换文本表格 / Text table converted normally |
+| Situation | Handling |
+|-----------|----------|
+| Cell contains `\|` | Auto-escaped to `\\\|` |
+| Newline inside cell | Replaced with `<br>` |
+| Merged cell | Non-master cells output empty string |
+| Empty sheet | Outputs placeholder text |
+| XLSX without images | Text table converted normally |
 
 ---
 
-## 常见问题 / FAQ
+## FAQ
 
-**Q: 转换失败，提示 "找不到命令 python3" / "python3 not found"**  
-A: 打开设置，将 `xlsx2md.pythonPath` 改为您系统上的 Python 路径（如 `python` 或绝对路径）。  
+**Q: Conversion fails with "python3 not found"**  
 A: Open Settings and set `xlsx2md.pythonPath` to your Python binary (e.g. `python` or an absolute path).
 
-**Q: 图片没有出现在 Markdown 中 / Images missing from Markdown**  
-A: 确认已安装 `openpyxl` 和 `Pillow`。运行命令面板 → `xlsx2md: Install Python Dependencies`，或手动执行：`pip install openpyxl Pillow`  
+**Q: Images missing from Markdown**  
 A: Ensure `openpyxl` and `Pillow` are installed. Run Command Palette → `xlsx2md: Install Python Dependencies`, or manually: `pip install openpyxl Pillow`
 
-**Q: `@xlsx2md` 在 Copilot Chat 中不出现 / `@xlsx2md` doesn't appear in Copilot Chat**  
-A: 确认已安装 GitHub Copilot Chat 扩展，且 VS Code 版本 ≥ 1.90。  
+**Q: `@xlsx2md` doesn't appear in Copilot Chat**  
 A: Ensure GitHub Copilot Chat extension is installed and VS Code ≥ 1.90.
 
-**Q: 转换超时 / Conversion timed out**  
-A: 对于大文件，增加 `xlsx2md.conversionTimeout` 的值（单位：秒）。  
+**Q: Conversion timed out**  
 A: For large files, increase `xlsx2md.conversionTimeout` (in seconds).
 
-**Q: 如何重新安装 Python 依赖 / How to reinstall Python dependencies**  
-A: 打开命令面板 `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`。  
+**Q: How to reinstall Python dependencies**  
 A: Open Command Palette `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`.
