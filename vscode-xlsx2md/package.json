@@ -41,6 +41,11 @@
         "command": "xlsx2md.convertFileNoImages",
         "title": "Convert XLSX to Markdown (text only)",
         "category": "xlsx2md"
+      },
+      {
+        "command": "xlsx2md.installDependencies",
+        "title": "Install Python Dependencies (openpyxl, Pillow)",
+        "category": "xlsx2md"
       }
     ],
     "menus": {

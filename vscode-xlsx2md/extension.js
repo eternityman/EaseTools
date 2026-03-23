@@ -12,7 +12,10 @@ const fs = require("fs");
 
 /**
  * Resolve the path to xlsx2md.py.
- * Priority: user setting → bundled script next to this extension.
+ * Priority:
+ *   1. User-configured `xlsx2md.scriptPath` setting
+ *   2. Bundled `scripts/xlsx2md.py` inside this extension (works when installed as VSIX)
+ *   3. Sibling `../xlsx2md/xlsx2md.py` (monorepo dev layout fallback)
  * @returns {string}
  */
 function resolveScriptPath() {
@@ -21,8 +24,132 @@ function resolveScriptPath() {
   if (custom && fs.existsSync(custom)) {
     return custom;
   }
-  // Bundled: the script lives at ../xlsx2md/xlsx2md.py relative to this file
+  // Bundled copy shipped inside the VSIX package
+  const bundled = path.join(__dirname, "scripts", "xlsx2md.py");
+  if (fs.existsSync(bundled)) {
+    return bundled;
+  }
+  // Development fallback: monorepo sibling directory
   return path.join(__dirname, "..", "xlsx2md", "xlsx2md.py");
+}
+
+// ---------------------------------------------------------------------------
+// Python dependency management
+// ---------------------------------------------------------------------------
+
+/**
+ * Return true if `openpyxl` is importable with the given Python interpreter.
+ * @param {string} python
+ * @returns {Promise<boolean>}
+ */
+function checkDepsInstalled(python) {
+  return new Promise((resolve) => {
+    cp.execFile(
+      python, ["-c", "import openpyxl"],
+      { timeout: 10_000 },
+      (err) => resolve(!err)
+    );
+  });
+}
+
+/**
+ * Return true if the given Python interpreter can be executed at all.
+ * @param {string} python
+ * @returns {Promise<boolean>}
+ */
+function isPythonAvailable(python) {
+  return new Promise((resolve) => {
+    cp.execFile(python, ["--version"], { timeout: 10_000 }, (err) => resolve(!err));
+  });
+}
+
+/**
+ * Run `python -m pip install openpyxl Pillow` and resolve when done.
+ * @param {string} python
+ * @returns {Promise<void>}
+ */
+function runPipInstall(python) {
+  return new Promise((resolve, reject) => {
+    cp.execFile(
+      python, ["-m", "pip", "install", "openpyxl", "Pillow"],
+      { timeout: 120_000 },
+      (err, _stdout, stderr) => {
+        if (err) {
+          reject(new Error(stderr || err.message));
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Command: xlsx2md.installDependencies
+ * Checks Python availability then installs openpyxl + Pillow with a progress notification.
+ */
+async function doInstallDependencies() {
+  const cfg = vscode.workspace.getConfiguration("xlsx2md");
+  const python = cfg.get("pythonPath", "python3");
+
+  if (!(await isPythonAvailable(python))) {
+    const choice = await vscode.window.showErrorMessage(
+      `xlsx2md: Python interpreter '${python}' was not found. ` +
+        "Please install Python 3 and update the 'xlsx2md.pythonPath' setting.",
+      "Open Settings"
+    );
+    if (choice === "Open Settings") {
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings", "xlsx2md.pythonPath"
+      );
+    }
+    return;
+  }
+
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "xlsx2md: Installing Python dependencies (openpyxl, Pillow)…",
+      cancellable: false,
+    },
+    async () => {
+      try {
+        await runPipInstall(python);
+        vscode.window.showInformationMessage(
+          "✅ xlsx2md: Python dependencies installed successfully."
+        );
+      } catch (err) {
+        vscode.window.showErrorMessage(
+          `xlsx2md: Failed to install dependencies — ${/** @type {Error} */ (err).message}`
+        );
+      }
+    }
+  );
+}
+
+/**
+ * Silently check if openpyxl is installed; if not, offer a one-click install.
+ * Called after a short delay so it does not slow VS Code startup.
+ */
+async function checkAndOfferInstall() {
+  // Small delay: let VS Code finish rendering before showing any notification
+  await new Promise((r) => setTimeout(r, 2500));
+
+  const cfg = vscode.workspace.getConfiguration("xlsx2md");
+  const python = cfg.get("pythonPath", "python3");
+
+  if (await checkDepsInstalled(python)) {
+    return; // all good — nothing to do
+  }
+
+  const choice = await vscode.window.showWarningMessage(
+    "xlsx2md: Required Python packages (openpyxl, Pillow) are not installed.",
+    "Install now",
+    "Later"
+  );
+  if (choice === "Install now") {
+    await doInstallDependencies();
+  }
 }
 
 /**
@@ -106,6 +233,14 @@ function activate(context) {
     )
   );
 
+  // ── Command: Install Python dependencies ─────────────────────────────────
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "xlsx2md.installDependencies",
+      doInstallDependencies
+    )
+  );
+
   // ── Copilot Chat Participant ─────────────────────────────────────────────
   if (vscode.chat) {
     const participant = vscode.chat.createChatParticipant(
@@ -115,6 +250,9 @@ function activate(context) {
     participant.iconPath = new vscode.ThemeIcon("table");
     context.subscriptions.push(participant);
   }
+
+  // ── Startup dep check (non-blocking) ────────────────────────────────────
+  checkAndOfferInstall();
 }
 
 // ---------------------------------------------------------------------------

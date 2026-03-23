@@ -17,71 +17,75 @@
 
 ## 安装 / Installation
 
-### 前置条件 / Prerequisites
+### 方式 A — VS Code 插件市场（推荐）/ Method A — VS Code Marketplace (recommended)
+
+> 最简单的一键安装方式。  
+> The easiest one-click install method.
+
+1. 打开 VS Code，按 `Ctrl+Shift+X` 打开插件面板。  
+   Open VS Code, press `Ctrl+Shift+X` to open the Extensions panel.
+
+2. 搜索 **`xlsx2md`** 或 **`easetools.xlsx2md`**，点击 **Install**。  
+   Search for **`xlsx2md`** or **`easetools.xlsx2md`**, then click **Install**.
+
+3. 安装完成后，插件会自动检测 Python 依赖是否就绪。  
+   After install, the extension automatically checks whether Python dependencies are present.  
+   - 若缺少依赖，会弹出通知 → 点击 **"Install now"** 即可一键安装 `openpyxl` 和 `Pillow`。  
+     If packages are missing, a notification appears → click **"Install now"** to install `openpyxl` and `Pillow` automatically.
+
+**前置条件 / Prerequisites:**
 
 | 要求 | 版本 | 说明 |
 |------|------|------|
 | **VS Code** | 1.90+ | 必须 / Required |
-| **Python** | 3.7+ | 必须 / Required |
-| **openpyxl** | ≥ 3.0.0 | 必须 / Required |
-| **Pillow** | ≥ 9.0.0 | 推荐（图片处理）/ Recommended (image support) |
+| **Python** | 3.7+ | 必须 / Required（插件会自动安装 pip 包 / extension auto-installs pip packages） |
 
-> **Requirements:** VS Code 1.90+, Python 3.7+, openpyxl, Pillow
+> Python 本身需要预先安装。如果系统还没有 Python，请先访问 [python.org](https://www.python.org/downloads/) 下载安装。  
+> Python itself must be installed first. If not already installed, download it from [python.org](https://www.python.org/downloads/).
 
 ---
 
-### 步骤 1 — 安装 Python 依赖 / Step 1 — Install Python dependencies
+### 方式 B — 下载 VSIX 离线安装 / Method B — Install from VSIX (offline)
+
+如果无法访问插件市场，可以从 [GitHub Releases](https://github.com/eternityman/EaseTools/releases) 下载 `.vsix` 文件：  
+If the marketplace is unavailable, download the `.vsix` from [GitHub Releases](https://github.com/eternityman/EaseTools/releases):
 
 ```bash
-pip install openpyxl Pillow
+# 命令行一键安装 / One command install
+code --install-extension easetools.xlsx2md-*.vsix
 ```
 
-Windows 用户如果 `pip` 不在 PATH，可以使用：  
-On Windows, if `pip` is not on PATH:
-```bat
+或通过 UI / Or via UI:
+
+1. 打开命令面板 `Ctrl+Shift+P` → `Extensions: Install from VSIX…`  
+   Open Command Palette `Ctrl+Shift+P` → `Extensions: Install from VSIX…`
+2. 选择下载的 `.vsix` 文件 / Select the downloaded `.vsix` file.
+
+---
+
+### 方式 C — 从源码安装（开发者）/ Method C — Install from source (developers)
+
+```bash
+git clone https://github.com/eternityman/EaseTools.git
+code EaseTools/vscode-xlsx2md   # 打开扩展目录 / open extension folder
+# 按 F5 启动扩展开发主机 / Press F5 to launch Extension Development Host
+```
+
+---
+
+### Python 依赖手动安装 / Manual Python dependency install
+
+如果自动安装失败，或者需要手动重新安装，可以：  
+If auto-install fails, or you need to reinstall manually:
+
+**方法 1 — 命令面板** `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`
+
+**方法 2 — 终端**
+```bash
+pip install openpyxl Pillow
+# Windows 上如果 pip 不在 PATH / Windows fallback:
 python -m pip install openpyxl Pillow
 ```
-
----
-
-### 步骤 2 — 安装插件 / Step 2 — Install the extension
-
-#### 方式 A：从源码安装（开发者模式）/ Method A: Install from source (developer mode)
-
-1. 克隆仓库到本地 / Clone the repo:
-   ```bash
-   git clone https://github.com/eternityman/EaseTools.git
-   cd EaseTools
-   ```
-
-2. 用 VS Code 打开 `vscode-xlsx2md` 文件夹 / Open the `vscode-xlsx2md` folder in VS Code:
-   ```bash
-   code vscode-xlsx2md
-   ```
-
-3. 按 `F5` 启动扩展开发主机，即可在新窗口中使用插件。  
-   Press `F5` to launch the Extension Development Host — the extension is active in the new window.
-
-#### 方式 B：安装 VSIX 包 / Method B: Install VSIX package
-
-如果已有 `.vsix` 安装包 / If you have a `.vsix` package:
-
-1. 打开命令面板 `Ctrl+Shift+P` / Open Command Palette: `Ctrl+Shift+P`
-2. 选择 `Extensions: Install from VSIX…` 
-3. 选择 `.vsix` 文件 / Select the `.vsix` file
-
----
-
-### 步骤 3 — 检查 Python 路径配置 / Step 3 — Verify Python path setting
-
-打开 VS Code 设置 (`Ctrl+,`) 搜索 `xlsx2md`：  
-Open VS Code Settings (`Ctrl+,`) and search for `xlsx2md`:
-
-- **`xlsx2md.pythonPath`**：默认为 `python3`。如果您的 Python 可执行文件名不同，请修改此项。  
-  Default is `python3`. Change this if your Python binary has a different name.  
-  - macOS/Linux: `python3` ✓  
-  - Windows (通常 / typical): `python`  
-  - 虚拟环境 / virtualenv: `/path/to/.venv/bin/python3`
 
 ---
 
@@ -234,8 +238,8 @@ A: 打开设置，将 `xlsx2md.pythonPath` 改为您系统上的 Python 路径�
 A: Open Settings and set `xlsx2md.pythonPath` to your Python binary (e.g. `python` or an absolute path).
 
 **Q: 图片没有出现在 Markdown 中 / Images missing from Markdown**  
-A: 确认已安装 `openpyxl` 和 `Pillow`：`pip install openpyxl Pillow`  
-A: Ensure `openpyxl` and `Pillow` are installed: `pip install openpyxl Pillow`
+A: 确认已安装 `openpyxl` 和 `Pillow`。运行命令面板 → `xlsx2md: Install Python Dependencies`，或手动执行：`pip install openpyxl Pillow`  
+A: Ensure `openpyxl` and `Pillow` are installed. Run Command Palette → `xlsx2md: Install Python Dependencies`, or manually: `pip install openpyxl Pillow`
 
 **Q: `@xlsx2md` 在 Copilot Chat 中不出现 / `@xlsx2md` doesn't appear in Copilot Chat**  
 A: 确认已安装 GitHub Copilot Chat 扩展，且 VS Code 版本 ≥ 1.90。  
@@ -244,3 +248,7 @@ A: Ensure GitHub Copilot Chat extension is installed and VS Code ≥ 1.90.
 **Q: 转换超时 / Conversion timed out**  
 A: 对于大文件，增加 `xlsx2md.conversionTimeout` 的值（单位：秒）。  
 A: For large files, increase `xlsx2md.conversionTimeout` (in seconds).
+
+**Q: 如何重新安装 Python 依赖 / How to reinstall Python dependencies**  
+A: 打开命令面板 `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`。  
+A: Open Command Palette `Ctrl+Shift+P` → `xlsx2md: Install Python Dependencies`.
