@@ -128,7 +128,6 @@ function activate(context) {
 async function convertCommand(uri, noImages) {
   // Resolve XLSX URI
   if (!uri) {
-    const editors = vscode.window.visibleTextEditors;
     const active = vscode.window.activeTextEditor;
     if (active && /\.xlsx$/i.test(active.document.fileName)) {
       uri = active.document.uri;
