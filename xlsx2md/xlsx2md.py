@@ -169,6 +169,12 @@ def sheet_to_markdown(sheet, image_map, include_images=True):
             row_cells.append(text)
         rows_data.append(row_cells)
 
+    # openpyxl 对空 Sheet 有时仍报告 max_row=1, max_col=1，但所有单元格均为空。
+    # 此时生成一个全空的表格没有意义，统一显示占位提示。
+    if all(cell == "" for row in rows_data for cell in row):
+        lines.append("*（此 Sheet 无数据）*")
+        return lines
+
     # 第一行作为表头
     header = rows_data[0]
     lines.append("| " + " | ".join(header) + " |")
