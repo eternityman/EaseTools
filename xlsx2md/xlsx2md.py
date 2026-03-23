@@ -69,8 +69,9 @@ def extract_images(sheet, image_dir, sheet_name):
 
     os.makedirs(image_dir, exist_ok=True)
 
-    # 生成合法文件名前缀（去除不能用于文件名的字符）
+    # 生成合法文件名前缀（去除不能用于文件名的字符，合并连续下划线）
     safe_sheet = "".join(c if c.isalnum() or c in "-_" else "_" for c in sheet_name)
+    safe_sheet = "_".join(part for part in safe_sheet.split("_") if part)
 
     for idx, img in enumerate(drawings):
         filename = f"{safe_sheet}_img_{idx}.png"
@@ -180,6 +181,69 @@ def sheet_to_markdown(sheet, image_map, include_images=True):
     return lines
 
 
+def _build_md_sections(wb, abs_image_dir, image_dir, include_images, sheet_filter):
+    """
+    内部辅助：遍历工作簿中的 Sheet，生成 Markdown 段落列表。
+
+    :param wb: openpyxl Workbook 对象
+    :param abs_image_dir: 图片保存的绝对路径目录
+    :param image_dir: 图片目录名（用于生成引用路径）
+    :param include_images: 是否处理图片
+    :param sheet_filter: 只处理指定名称的 Sheet（None 表示全部）
+    :return: (list[str] md_sections, bool found_filter)
+    """
+    md_sections = []
+    for sheet_name in wb.sheetnames:
+        if sheet_filter and sheet_name != sheet_filter:
+            continue
+
+        sheet = wb[sheet_name]
+
+        img_map = {}
+        if include_images:
+            img_map = extract_images(sheet, abs_image_dir, sheet_name)
+
+        section_lines = [f"## {sheet_name}", ""]
+        table_lines = sheet_to_markdown(sheet, img_map, include_images=include_images)
+        section_lines.extend(table_lines)
+        md_sections.append("\n".join(section_lines))
+
+    return md_sections
+
+
+def xlsx_to_markdown_string(
+    input_path,
+    image_dir="images",
+    include_images=True,
+    sheet_filter=None,
+):
+    """
+    将 XLSX 文件转换为 Markdown 字符串（不写入文件）。
+
+    图片仍会保存到 image_dir 目录（相对于 input_path 所在目录），
+    Markdown 中的图片引用路径也相对于该目录。
+
+    :param input_path: 输入 XLSX 文件路径
+    :param image_dir: 图片输出目录（默认 images）
+    :param include_images: 是否处理图片（默认 True）
+    :param sheet_filter: 只转换指定名称的 Sheet（默认 None 表示全部）
+    :return: Markdown 字符串
+    :raises FileNotFoundError: 输入文件不存在时
+    """
+    if not os.path.isfile(input_path):
+        raise FileNotFoundError(f"找不到输入文件 '{input_path}'")
+
+    input_dir = os.path.dirname(os.path.abspath(input_path))
+    abs_image_dir = os.path.join(input_dir, image_dir)
+
+    wb = openpyxl.load_workbook(input_path, data_only=True)
+    md_sections = _build_md_sections(wb, abs_image_dir, image_dir, include_images, sheet_filter)
+
+    if not md_sections:
+        return ""
+    return "\n\n".join(md_sections) + "\n"
+
+
 def xlsx_to_markdown(
     input_path,
     output_path=None,
@@ -210,25 +274,7 @@ def xlsx_to_markdown(
     abs_image_dir = os.path.join(output_dir, image_dir)
 
     wb = openpyxl.load_workbook(input_path, data_only=True)
-    md_sections = []
-
-    for sheet_name in wb.sheetnames:
-        # 按名称过滤 Sheet
-        if sheet_filter and sheet_name != sheet_filter:
-            continue
-
-        sheet = wb[sheet_name]
-
-        # 提取图片
-        img_map = {}
-        if include_images:
-            img_map = extract_images(sheet, abs_image_dir, sheet_name)
-
-        # 转换表格
-        section_lines = [f"## {sheet_name}", ""]
-        table_lines = sheet_to_markdown(sheet, img_map, include_images=include_images)
-        section_lines.extend(table_lines)
-        md_sections.append("\n".join(section_lines))
+    md_sections = _build_md_sections(wb, abs_image_dir, image_dir, include_images, sheet_filter)
 
     if not md_sections:
         if sheet_filter:

@@ -29,6 +29,7 @@ from xlsx2md import (
     get_anchor_cell,
     sheet_to_markdown,
     xlsx_to_markdown,
+    xlsx_to_markdown_string,
 )
 
 
@@ -271,6 +272,107 @@ class TestXlsxToMarkdown(unittest.TestCase):
         with self.assertRaises(SystemExit) as ctx:
             xlsx_to_markdown("/nonexistent/path/file.xlsx")
         self.assertEqual(ctx.exception.code, 1)
+
+
+class TestXlsxToMarkdownString(unittest.TestCase):
+    """测试 xlsx_to_markdown_string 函数（返回字符串而不写入文件）"""
+
+    def _create_xlsx(self, data_by_sheet):
+        """创建含多 Sheet 的 XLSX 文件，返回临时文件路径"""
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        for sheet_name, rows in data_by_sheet.items():
+            ws = wb.create_sheet(title=sheet_name)
+            for r_idx, row in enumerate(rows, start=1):
+                for c_idx, val in enumerate(row, start=1):
+                    ws.cell(row=r_idx, column=c_idx, value=val)
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        wb.save(tmp.name)
+        tmp.close()
+        return tmp.name
+
+    def test_returns_string(self):
+        """返回值应为字符串类型"""
+        xlsx_path = self._create_xlsx({"Sheet1": [["A"], [1]]})
+        try:
+            result = xlsx_to_markdown_string(xlsx_path, include_images=False)
+            self.assertIsInstance(result, str)
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_content_matches_file_output(self):
+        """返回的字符串内容应与写入文件的内容一致"""
+        xlsx_path = self._create_xlsx({
+            "Data": [["名称", "数量"], ["苹果", 10], ["香蕉", 20]],
+        })
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                md_path = os.path.join(tmpdir, "output.md")
+                xlsx_to_markdown(xlsx_path, output_path=md_path, include_images=False)
+                with open(md_path, encoding="utf-8") as f:
+                    file_content = f.read()
+            string_content = xlsx_to_markdown_string(xlsx_path, include_images=False)
+            self.assertEqual(string_content, file_content)
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_missing_file_raises(self):
+        """输入文件不存在时应抛出 FileNotFoundError"""
+        with self.assertRaises(FileNotFoundError):
+            xlsx_to_markdown_string("/nonexistent/path/file.xlsx")
+
+    def test_sheet_filter(self):
+        """sheet_filter 参数只返回指定 Sheet 内容"""
+        xlsx_path = self._create_xlsx({
+            "Alpha": [["A"], [1]],
+            "Beta": [["B"], [2]],
+        })
+        try:
+            result = xlsx_to_markdown_string(xlsx_path, include_images=False, sheet_filter="Alpha")
+            self.assertIn("## Alpha", result)
+            self.assertNotIn("## Beta", result)
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_empty_result_for_unknown_sheet(self):
+        """sheet_filter 指定不存在的 Sheet 时返回空字符串"""
+        xlsx_path = self._create_xlsx({"Sheet1": [["A"], [1]]})
+        try:
+            result = xlsx_to_markdown_string(xlsx_path, include_images=False, sheet_filter="NonExistent")
+            self.assertEqual(result, "")
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_images_embedded_in_string(self):
+        """当 XLSX 含嵌入图片时，返回的字符串中应含图片引用"""
+        try:
+            from PIL import Image as PILImage
+            from openpyxl.drawing.image import Image as XLImage
+        except ImportError:
+            self.skipTest("Pillow 或 openpyxl 未安装")
+
+        buf = io.BytesIO()
+        PILImage.new("RGB", (10, 10), color=(255, 0, 0)).save(buf, format="PNG")
+        buf.seek(0)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws["A1"] = "Name"
+        ws["B1"] = "Photo"
+        ws["A2"] = "Alice"
+        xl_img = XLImage(buf)
+        xl_img.anchor = "B2"
+        ws.add_image(xl_img)
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        wb.save(tmp.name)
+        tmp.close()
+        try:
+            result = xlsx_to_markdown_string(tmp.name)
+            self.assertIn("![image]", result)
+        finally:
+            os.unlink(tmp.name)
 
 
 class TestImagePlacement(unittest.TestCase):
