@@ -273,5 +273,173 @@ class TestXlsxToMarkdown(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 1)
 
 
+class TestImagePlacement(unittest.TestCase):
+    """
+    真实端到端图片测试：
+    将实际 PNG 图片嵌入 XLSX 特定单元格，
+    运行完整转换，验证 Markdown 输出中图片引用出现在正确的行和列。
+    """
+
+    @staticmethod
+    def _make_png(color=(255, 0, 0)):
+        """生成一个 10×10 纯色 PNG 的 BytesIO"""
+        try:
+            from PIL import Image as PILImage
+        except ImportError:
+            return None
+        buf = io.BytesIO()
+        PILImage.new("RGB", (10, 10), color=color).save(buf, format="PNG")
+        buf.seek(0)
+        return buf
+
+    def _create_xlsx_with_images(self):
+        """
+        创建包含嵌入图片的 XLSX：
+          A1=姓名, B1=头像, C1=备注
+          A2=张三,          C2=经理   （图片锚定在 B2）
+          A3=李四,          C3=工程师  （图片锚定在 B3）
+        返回临时 XLSX 路径。
+        """
+        try:
+            from openpyxl.drawing.image import Image as XLImage
+        except ImportError:
+            self.skipTest("openpyxl 未安装")
+
+        png1 = self._make_png((255, 0, 0))
+        png2 = self._make_png((0, 0, 255))
+        if png1 is None:
+            self.skipTest("Pillow 未安装，跳过图片测试")
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws["A1"] = "姓名"
+        ws["B1"] = "头像"
+        ws["C1"] = "备注"
+        ws["A2"] = "张三"
+        ws["C2"] = "经理"
+        ws["A3"] = "李四"
+        ws["C3"] = "工程师"
+
+        img1 = XLImage(png1)
+        img1.anchor = "B2"  # 0-based: row=1, col=1
+        ws.add_image(img1)
+
+        img2 = XLImage(png2)
+        img2.anchor = "B3"  # 0-based: row=2, col=1
+        ws.add_image(img2)
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        wb.save(tmp.name)
+        tmp.close()
+        return tmp.name
+
+    def _parse_table_rows(self, md_content):
+        """从 Markdown 内容中解析出表格行（跳过分隔行），返回每行各列列表"""
+        rows = []
+        for line in md_content.splitlines():
+            if not line.startswith("|"):
+                continue
+            # 跳过分隔行 (| --- | --- |)
+            stripped = line.strip("|").strip()
+            if all(set(c) <= set("- ") for c in stripped.split("|")):
+                continue
+            cols = [c.strip() for c in line.strip("|").split("|")]
+            rows.append(cols)
+        return rows
+
+    def test_images_saved_to_disk(self):
+        """图片文件应被实际保存到 images 目录"""
+        xlsx_path = self._create_xlsx_with_images()
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                md_path = os.path.join(tmpdir, "output.md")
+                xlsx_to_markdown(xlsx_path, output_path=md_path, image_dir="images")
+                img_dir = os.path.join(tmpdir, "images")
+                self.assertTrue(os.path.isdir(img_dir), "images 目录应存在")
+                saved = sorted(os.listdir(img_dir))
+                self.assertEqual(len(saved), 2, f"应保存 2 张图片，实际: {saved}")
+                for fname in saved:
+                    fpath = os.path.join(img_dir, fname)
+                    self.assertGreater(os.path.getsize(fpath), 0, f"{fname} 不应为空文件")
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_image_in_correct_row_and_column(self):
+        """
+        图片引用应出现在 Markdown 表格中正确的行和列：
+        - 张三行（数据第 1 行）的 B 列（第 2 列）包含图片引用
+        - 李四行（数据第 2 行）的 B 列（第 2 列）包含图片引用
+        - 备注列（第 3 列）不应含图片引用
+        """
+        xlsx_path = self._create_xlsx_with_images()
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                md_path = os.path.join(tmpdir, "output.md")
+                xlsx_to_markdown(xlsx_path, output_path=md_path, image_dir="images")
+                with open(md_path, encoding="utf-8") as f:
+                    content = f.read()
+                rows = self._parse_table_rows(content)
+
+                # rows[0] = 表头行
+                self.assertEqual(rows[0][0], "姓名")
+                self.assertEqual(rows[0][1], "头像")
+                self.assertEqual(rows[0][2], "备注")
+
+                # rows[1] = 张三行
+                self.assertEqual(rows[1][0], "张三", "第1列应为张三")
+                self.assertIn("![image]", rows[1][1], "张三行 B 列应含图片引用")
+                self.assertNotIn("![image]", rows[1][2], "张三行 C 列不应含图片引用")
+                self.assertIn("经理", rows[1][2], "张三行 C 列应为备注文字")
+
+                # rows[2] = 李四行
+                self.assertEqual(rows[2][0], "李四", "第1列应为李四")
+                self.assertIn("![image]", rows[2][1], "李四行 B 列应含图片引用")
+                self.assertNotIn("![image]", rows[2][2], "李四行 C 列不应含图片引用")
+                self.assertIn("工程师", rows[2][2], "李四行 C 列应为备注文字")
+
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_two_images_reference_different_files(self):
+        """两张图片应引用不同的文件名"""
+        xlsx_path = self._create_xlsx_with_images()
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                md_path = os.path.join(tmpdir, "output.md")
+                xlsx_to_markdown(xlsx_path, output_path=md_path, image_dir="images")
+                with open(md_path, encoding="utf-8") as f:
+                    content = f.read()
+                rows = self._parse_table_rows(content)
+
+                import re
+                refs_row1 = re.findall(r'!\[image\]\(([^)]+)\)', rows[1][1])
+                refs_row2 = re.findall(r'!\[image\]\(([^)]+)\)', rows[2][1])
+                self.assertEqual(len(refs_row1), 1)
+                self.assertEqual(len(refs_row2), 1)
+                self.assertNotEqual(
+                    refs_row1[0], refs_row2[0],
+                    "两行图片应引用不同的文件"
+                )
+        finally:
+            os.unlink(xlsx_path)
+
+    def test_image_file_names_use_sheet_name(self):
+        """图片文件名应包含 Sheet 名称作为前缀"""
+        xlsx_path = self._create_xlsx_with_images()
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                md_path = os.path.join(tmpdir, "output.md")
+                xlsx_to_markdown(xlsx_path, output_path=md_path, image_dir="images")
+                img_dir = os.path.join(tmpdir, "images")
+                for fname in os.listdir(img_dir):
+                    self.assertTrue(
+                        fname.startswith("Sheet1"),
+                        f"图片文件名应以 Sheet1 开头，实际: {fname}"
+                    )
+        finally:
+            os.unlink(xlsx_path)
+
+
 if __name__ == "__main__":
     unittest.main()

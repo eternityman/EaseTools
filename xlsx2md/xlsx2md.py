@@ -78,8 +78,11 @@ def extract_images(sheet, image_dir, sheet_name):
 
         # 将图片数据写入文件
         try:
-            img_data = img.ref  # BytesIO 或类似对象
-            raw = img_data.read() if hasattr(img_data, 'read') else bytes(img_data)
+            img_stream = img.ref  # BytesIO 或类似对象
+            # openpyxl 加载时 BytesIO 游标不在起始位置，必须先 seek(0)
+            if hasattr(img_stream, 'seek'):
+                img_stream.seek(0)
+            raw = img_stream.read() if hasattr(img_stream, 'read') else bytes(img_stream)
 
             if HAS_PIL:
                 # 使用 Pillow 统一输出为 PNG 格式
