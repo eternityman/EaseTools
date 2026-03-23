@@ -1,0 +1,126 @@
+{
+  "name": "xlsx2md",
+  "displayName": "xlsx2md — XLSX to Markdown",
+  "description": "Convert Excel (.xlsx) files to Markdown tables with embedded images. Integrates with GitHub Copilot Chat via @xlsx2md.",
+  "version": "0.1.0",
+  "publisher": "xlsxConvert2mdwwy",
+  "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1a6bba",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/eternityman/EaseTools/tree/main/vscode-xlsx2md",
+  "bugs": {
+    "url": "https://github.com/eternityman/EaseTools/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eternityman/EaseTools"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Data Science",
+    "Formatters"
+  ],
+  "keywords": [
+    "xlsx",
+    "excel",
+    "markdown",
+    "convert",
+    "copilot",
+    "table"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xlsx2md.convertFile",
+        "title": "Convert XLSX to Markdown",
+        "category": "xlsx2md",
+        "icon": "$(table)"
+      },
+      {
+        "command": "xlsx2md.convertFileNoImages",
+        "title": "Convert XLSX to Markdown (text only)",
+        "category": "xlsx2md"
+      },
+      {
+        "command": "xlsx2md.installDependencies",
+        "title": "Install Python Dependencies (openpyxl, Pillow)",
+        "category": "xlsx2md"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .xlsx",
+          "command": "xlsx2md.convertFile",
+          "group": "navigation@1"
+        },
+        {
+          "when": "resourceExtname == .xlsx",
+          "command": "xlsx2md.convertFileNoImages",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "when": "resourceExtname == .xlsx",
+          "command": "xlsx2md.convertFile",
+          "group": "navigation"
+        }
+      ]
+    },
+    "chatParticipants": [
+      {
+        "id": "xlsx2md",
+        "name": "xlsx2md",
+        "fullName": "XLSX to Markdown",
+        "description": "Convert an XLSX file to Markdown. Attach a file with #file or mention its path.",
+        "isSticky": false,
+        "commands": [
+          {
+            "name": "convert",
+            "description": "Convert the referenced XLSX file to Markdown"
+          },
+          {
+            "name": "help",
+            "description": "Show usage instructions"
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "xlsx2md",
+      "properties": {
+        "xlsx2md.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Path to the Python interpreter used to run xlsx2md.py. Change this if 'python3' is not on your PATH (e.g. 'python' on Windows or a virtualenv path)."
+        },
+        "xlsx2md.scriptPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to xlsx2md.py. Leave empty to use the script bundled with this extension."
+        },
+        "xlsx2md.imageDir": {
+          "type": "string",
+          "default": "images",
+          "description": "Sub-directory name where extracted images are saved (relative to the output .md file)."
+        },
+        "xlsx2md.conversionTimeout": {
+          "type": "number",
+          "default": 120,
+          "description": "Maximum time in seconds to wait for xlsx2md.py to finish. Increase for very large workbooks."
+        }
+      }
+    }
+  }
+}

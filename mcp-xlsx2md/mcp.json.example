@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "xlsx2md": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/mcp-xlsx2md/server.py"],
+      "env": {}
+    }
+  }
+}

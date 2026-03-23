@@ -1,0 +1,63 @@
+name: Package & Publish VS Code Extension
+
+# Triggers:
+#   - Every push/merge to main:  builds the VSIX and uploads it as a workflow artifact
+#   - Tag push  v*.*.*          : also publishes to the VS Code Marketplace
+#   - Manual trigger            : allows packaging on demand from the Actions tab
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Build VSIX
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Sync xlsx2md.py into the extension's scripts/ directory ────────────
+      # The Python script lives in xlsx2md/ (shared with the CLI and MCP server).
+      # We copy it into vscode-xlsx2md/scripts/ so the packaged VSIX is self-contained.
+      - name: Bundle xlsx2md.py into extension
+        run: |
+          mkdir -p vscode-xlsx2md/scripts
+          cp xlsx2md/xlsx2md.py vscode-xlsx2md/scripts/xlsx2md.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce@3.7.1
+
+      # ── Build the VSIX ─────────────────────────────────────────────────────
+      - name: Package extension
+        working-directory: vscode-xlsx2md
+        run: vsce package --allow-missing-repository --no-dependencies
+
+      # ── Upload artifact (available on every run) ───────────────────────────
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xlsx2md-vsix
+          path: vscode-xlsx2md/*.vsix
+          retention-days: 90
+
+      # ── Publish to VS Code Marketplace (only on version tags) ──────────────
+      # Requires a VSCE_PAT secret:
+      #   1. Generate a Personal Access Token at https://dev.azure.com
+      #      (Marketplace > Manage → Publisher: easetools)
+      #   2. Add it as a repository secret named VSCE_PAT
+      - name: Publish to VS Code Marketplace
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: vscode-xlsx2md
+        run: vsce publish --pat "${{ secrets.VSCE_PAT }}"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
